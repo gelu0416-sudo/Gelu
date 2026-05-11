@@ -1,5 +1,7 @@
 const STORAGE_KEY = "sku-profit-calculator-history";
 const EXCHANGE_RATE_STORAGE_KEY = "sku-profit-calculator-exchange-rates";
+const EXCHANGE_RATE_SYNC_META_KEY = "sku-profit-calculator-exchange-sync-meta";
+const EXCHANGE_RATE_API_URL = "https://open.er-api.com/v6/latest/CNY";
 const RELEASE_VERSION = "v1.0.1";
 const RELEASE_UPDATED_AT = "2026-05-11";
 const CURRENCY_OPTIONS = [
@@ -254,6 +256,7 @@ const scenarios = [
 let activeScenarioId = scenarios[0].id;
 let history = loadHistory();
 let exchangeRates = loadExchangeRates();
+let exchangeSyncMeta = loadExchangeSyncMeta();
 
 const scenarioTabs = document.getElementById("scenarioTabs");
 const scenarioIntro = document.getElementById("scenarioIntro");
@@ -265,6 +268,7 @@ const formulaSummary = document.getElementById("formulaSummary");
 const historyList = document.getElementById("historyList");
 const exchangeRatePanel = document.getElementById("exchangeRatePanel");
 const releaseInfo = document.getElementById("releaseInfo");
+const exchangeSyncStatus = document.getElementById("exchangeSyncStatus");
 
 document.getElementById("resetButton").addEventListener("click", () => {
   renderForm(getScenario());
@@ -273,8 +277,15 @@ document.getElementById("resetButton").addEventListener("click", () => {
 
 document.getElementById("resetRatesButton").addEventListener("click", () => {
   exchangeRates = { ...DEFAULT_EXCHANGE_RATES };
+  exchangeSyncMeta = {
+    ...exchangeSyncMeta,
+    lastSyncAt: "",
+    lastSyncDate: ""
+  };
   persistExchangeRates();
+  persistExchangeSyncMeta();
   renderExchangeRatePanel();
+  renderExchangeSyncStatus("已重置为默认汇率");
   syncExchangeRateWithCurrency(true);
   renderResults();
 });
@@ -309,6 +320,9 @@ renderForm(getScenario());
 renderResults();
 renderHistory();
 renderReleaseInfo();
+renderExchangeSyncStatus("准备同步中...");
+scheduleMidnightExchangeSync();
+syncExchangeRatesIfNeeded();
 
 function getScenario() {
   return scenarios.find((item) => item.id === activeScenarioId);
@@ -531,12 +545,29 @@ function loadExchangeRates() {
   }
 }
 
+function loadExchangeSyncMeta() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(EXCHANGE_RATE_SYNC_META_KEY) || "{}");
+    return {
+      lastSyncAt: saved.lastSyncAt || "",
+      lastSyncDate: saved.lastSyncDate || "",
+      lastSyncSource: saved.lastSyncSource || ""
+    };
+  } catch (error) {
+    return { lastSyncAt: "", lastSyncDate: "", lastSyncSource: "" };
+  }
+}
+
 function persistHistory() {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
 }
 
 function persistExchangeRates() {
   window.localStorage.setItem(EXCHANGE_RATE_STORAGE_KEY, JSON.stringify(exchangeRates));
+}
+
+function persistExchangeSyncMeta() {
+  window.localStorage.setItem(EXCHANGE_RATE_SYNC_META_KEY, JSON.stringify(exchangeSyncMeta));
 }
 
 function createMetricCard(label, value, note, highlight = false, good = true) {
@@ -676,4 +707,81 @@ function getExchangeRate(currencyValue) {
 function renderReleaseInfo() {
   if (!releaseInfo) return;
   releaseInfo.textContent = `版本 ${RELEASE_VERSION} · 更新于 ${RELEASE_UPDATED_AT}`;
+}
+
+function renderExchangeSyncStatus(prefix) {
+  if (!exchangeSyncStatus) return;
+  const suffix = exchangeSyncMeta.lastSyncAt
+    ? `最近同步：${exchangeSyncMeta.lastSyncAt}`
+    : "最近同步：暂无";
+  exchangeSyncStatus.textContent = `汇率同步状态：${prefix} · ${suffix}`;
+}
+
+function getTodayDateKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const date = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${date}`;
+}
+
+function scheduleMidnightExchangeSync() {
+  const now = new Date();
+  const nextMidnight = new Date(now);
+  nextMidnight.setHours(24, 0, 0, 0);
+  const delay = nextMidnight.getTime() - now.getTime();
+
+  window.setTimeout(() => {
+    syncExchangeRates(true);
+    scheduleMidnightExchangeSync();
+  }, delay);
+}
+
+async function syncExchangeRatesIfNeeded() {
+  const today = getTodayDateKey();
+  if (exchangeSyncMeta.lastSyncDate === today) {
+    renderExchangeSyncStatus("今日已自动更新");
+    return;
+  }
+  await syncExchangeRates(false);
+}
+
+async function syncExchangeRates(force) {
+  const today = getTodayDateKey();
+  if (!force && exchangeSyncMeta.lastSyncDate === today) {
+    renderExchangeSyncStatus("今日已自动更新");
+    return;
+  }
+
+  renderExchangeSyncStatus("同步中");
+  try {
+    const response = await fetch(EXCHANGE_RATE_API_URL, { method: "GET" });
+    const payload = await response.json();
+    if (!response.ok || !payload || !payload.rates || !payload.rates.USD || !payload.rates.MYR) {
+      throw new Error("Invalid exchange rate payload");
+    }
+
+    // API provides 1 CNY = X currency; system needs RMB per target currency.
+    exchangeRates = {
+      ...exchangeRates,
+      RMB: 1,
+      USD: Number((1 / payload.rates.USD).toFixed(6)),
+      MYR: Number((1 / payload.rates.MYR).toFixed(6))
+    };
+
+    exchangeSyncMeta = {
+      lastSyncAt: new Date().toLocaleString("zh-CN"),
+      lastSyncDate: today,
+      lastSyncSource: EXCHANGE_RATE_API_URL
+    };
+
+    persistExchangeRates();
+    persistExchangeSyncMeta();
+    renderExchangeRatePanel();
+    syncExchangeRateWithCurrency(true);
+    renderResults();
+    renderExchangeSyncStatus("已自动更新");
+  } catch (error) {
+    renderExchangeSyncStatus("同步失败，使用本地汇率");
+  }
 }
