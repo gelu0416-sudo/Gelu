@@ -1,5 +1,7 @@
 const STORAGE_KEY = "sku-profit-calculator-history";
 const EXCHANGE_RATE_STORAGE_KEY = "sku-profit-calculator-exchange-rates";
+const RELEASE_VERSION = "v1.0.1";
+const RELEASE_UPDATED_AT = "2026-05-11";
 const CURRENCY_OPTIONS = [
   { value: "USD", label: "美元", symbol: "$" },
   { value: "MYR", label: "马来币", symbol: "RM" },
@@ -262,6 +264,7 @@ const insightList = document.getElementById("insightList");
 const formulaSummary = document.getElementById("formulaSummary");
 const historyList = document.getElementById("historyList");
 const exchangeRatePanel = document.getElementById("exchangeRatePanel");
+const releaseInfo = document.getElementById("releaseInfo");
 
 document.getElementById("resetButton").addEventListener("click", () => {
   renderForm(getScenario());
@@ -305,6 +308,7 @@ renderExchangeRatePanel();
 renderForm(getScenario());
 renderResults();
 renderHistory();
+renderReleaseInfo();
 
 function getScenario() {
   return scenarios.find((item) => item.id === activeScenarioId);
@@ -667,4 +671,9 @@ function syncExchangeRateWithCurrency() {
 
 function getExchangeRate(currencyValue) {
   return exchangeRates[currencyValue] ?? DEFAULT_EXCHANGE_RATES[currencyValue] ?? 1;
+}
+
+function renderReleaseInfo() {
+  if (!releaseInfo) return;
+  releaseInfo.textContent = `版本 ${RELEASE_VERSION} · 更新于 ${RELEASE_UPDATED_AT}`;
 }

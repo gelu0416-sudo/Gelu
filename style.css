@@ -402,6 +402,18 @@ h1 {
   color: var(--muted);
 }
 
+.release-footer {
+  margin-top: 18px;
+  padding: 0 6px;
+}
+
+.release-info {
+  text-align: right;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
 .positive {
   color: var(--green);
 }
