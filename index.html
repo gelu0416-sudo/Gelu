@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>单品利润核算系统</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Cross-Border SKU Profit Engine</p>
+          <h1>单品利润核算系统</h1>
+          <p class="hero-text">
+            面向跨境电商单品成本核算，支持国内发货自然流、国内发货爆款推流、国外发货爆款推流三种场景。
+          </p>
+        </div>
+        <div class="hero-card">
+          <span>核算逻辑</span>
+          <strong>收入换算人民币</strong>
+          <strong>自动拆分平台/广告/物流/备付成本</strong>
+          <strong>即时输出利润、利润率、ROI</strong>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel scenario-panel">
+          <div class="exchange-panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">汇率设置</p>
+                <h2>币种配置</h2>
+              </div>
+              <button id="resetRatesButton" class="ghost-button" type="button">重置汇率</button>
+            </div>
+            <div id="exchangeRatePanel" class="exchange-rate-panel"></div>
+          </div>
+
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">场景选择</p>
+              <h2>核算模板</h2>
+            </div>
+            <button id="resetButton" class="ghost-button" type="button">恢复默认值</button>
+          </div>
+          <div id="scenarioTabs" class="scenario-tabs" aria-label="利润模板"></div>
+          <div id="scenarioIntro" class="scenario-intro"></div>
+          <form id="calculatorForm" class="calculator-form"></form>
+        </section>
+
+        <section class="panel result-panel">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">结果总览</p>
+              <h2>利润输出</h2>
+            </div>
+            <button id="saveSnapshotButton" class="primary-button" type="button">保存本次测算</button>
+          </div>
+
+          <div class="metric-grid" id="metricGrid"></div>
+
+          <div class="result-breakdown">
+            <div class="breakdown-card">
+              <h3>成本结构</h3>
+              <div id="costBreakdown" class="breakdown-list"></div>
+            </div>
+            <div class="breakdown-card">
+              <h3>关键结论</h3>
+              <div id="insightList" class="insight-list"></div>
+            </div>
+          </div>
+
+          <div class="formula-card">
+            <h3>当前公式说明</h3>
+            <div id="formulaSummary" class="formula-summary"></div>
+          </div>
+
+          <div class="history-card">
+            <div class="history-head">
+              <h3>历史测算</h3>
+              <button id="clearHistoryButton" class="ghost-button" type="button">清空历史</button>
+            </div>
+            <div id="historyList" class="history-list empty-state">
+              暂无历史记录，点击“保存本次测算”后会保存在浏览器本地。
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
